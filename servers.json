@@ -1,0 +1,19 @@
+{
+
+   "node" : [
+        {
+            "sender" : "/tests",
+            "receiver" : "http://localhost:8082"
+        }
+  
+    ],
+    "node1" : [
+        {
+            "sender" : "http://localhost:8000/user",
+            "receiver" : "http://localhost:8002/user"
+        }
+  
+    ]
+    
+
+}
