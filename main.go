@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 
+ 
 	"github.com/mohammadMghi/apiGolangGateway/db"
 	"github.com/mohammadMghi/apiGolangGateway/models"
 )
@@ -18,9 +19,7 @@ type Handlers struct{
  
 }
 
-type Nodes struct{
- 	data	map[string]string
-}
+ 
 
 
 func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
@@ -47,11 +46,7 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
  
 	json.Unmarshal(jsonBytes, &nodes)
 	
-
-	//get width of request (size , content , check )
-
-
-	//monitor
+ 
 
  
 
@@ -65,13 +60,36 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 	   
 				redirectURL := value[0]["receiver"] 
 
+			 
+
+				if value[0]["auth_required"]== "true" {
+
+					authorizationHeader := r.Header.Get("Authorization")
+
+					if authorizationHeader == "" {
+						http.Error(w, "Unauthorized", http.StatusUnauthorized)
+						return
+					}
+			
+				} 
+
 				 
 				payload , err := ioutil.ReadAll(r.Body)
 				if err != nil {
 					fmt.Println(err)
 					return
 				}
- 
+
+				if value[0]["is_root"] == "true"{
+					transaction.Is_root = true
+				}else{
+
+					transaction.RootId = value[0]["root_id"]
+
+					transaction.Is_root = false
+				}
+
+				
 
 				transaction.Payload = string(payload) 
 

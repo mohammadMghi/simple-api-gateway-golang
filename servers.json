@@ -2,15 +2,21 @@
 
    "node" : [
         {
-            "sender" : "/tests",
-            "receiver" : "http://localhost:8082"
+            "id" : "1",
+            "sender" : "/reguster",
+            "receiver" : "http://localhost:8082",
+            "auth_required" : "true",
+            "is_root" :"true"
         }
   
     ],
     "node1" : [
         {
-            "sender" : "http://localhost:8000/user",
-            "receiver" : "http://localhost:8002/user"
+            "id" : "2",
+            "sender" : "/auth",
+            "receiver" : "http://localhost:8002/user",
+            "auth_required" : "false",
+            "root_id" : "1"
         }
   
     ]
