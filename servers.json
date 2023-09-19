@@ -1,6 +1,6 @@
 {
 
-   "node" : [
+   "service1" : [
         {
             "id" : "1",
             "sender" : "/reguster",
@@ -10,7 +10,7 @@
         }
   
     ],
-    "node1" : [
+    "service2" : [
         {
             "id" : "2",
             "sender" : "/auth",
