@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+ 
 	"net/http"
 	"os"
 
- 
 	"github.com/mohammadMghi/apiGolangGateway/db"
 	"github.com/mohammadMghi/apiGolangGateway/models"
 )
@@ -24,7 +24,7 @@ type Handlers struct{
 
 func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 
-
+ 
 
  
 	file, err := os.Open("servers.json")
@@ -46,21 +46,22 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
  
 	json.Unmarshal(jsonBytes, &nodes)
 	
- 
 
  
 
 	for _ , value := range nodes {
 	
 		if w.URL.Path == value[0]["sender"] {
-		 
+	
 			var transaction models.Transaction
-			
-			http.HandleFunc(value[0]["sender"], func(w http.ResponseWriter, r *http.Request) {
-	   
+
+			hlr :=http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		 
+				fmt.Println(value[0]["sender"])
+
 				redirectURL := value[0]["receiver"] 
 
-			 
+			
 
 				if value[0]["auth_required"]== "true" {
 
@@ -73,13 +74,13 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 			
 				} 
 
-				 
+	
 				payload , err := ioutil.ReadAll(r.Body)
 				if err != nil {
 					fmt.Println(err)
 					return
 				}
-
+		
 				if value[0]["is_root"] == "true"{
 					transaction.Is_root = true
 				}else{
@@ -89,7 +90,7 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 					transaction.Is_root = false
 				}
 
-				
+ 
 
 				transaction.Payload = string(payload) 
 
@@ -97,27 +98,31 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 				
 	 
 				http.Redirect(w, r, redirectURL, http.StatusFound)
+
+				 
 			})
+
+			hlr.ServeHTTP(r,w)
 			break
 	 
 		}else{
 			fmt.Errorf("Not found")
 		}
 
-   
+		
 	 
    }
  
-
+ 
  
 }
  
  
 func main(){
 	var handlers Handlers
+  
  
-
-
+ 
 	// Start the HTTP server on port 8080
 	err := http.ListenAndServe(":8080", handlers)
 	if err != nil {

@@ -4,8 +4,8 @@
         {
             "id" : "1",
             "sender" : "/reguster",
-            "receiver" : "http://localhost:8082",
-            "auth_required" : "true",
+            "receiver" : "http://localhost:8081",
+            "auth_required" : "false",
             "is_root" :"true"
         }
   

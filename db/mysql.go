@@ -43,11 +43,15 @@ func Insert(model models.Transaction){
  
 
 	if err !=nil{
-		fmt.Errorf(err.Error())
+		panic(err)
 	}
 
  
 
-	db.Save(model)
+	err  = db.Save(&model).Error
 	
+	if err != nil {
+		fmt.Errorf(err.Error())
+		panic(err.Error())
+	}
 }
