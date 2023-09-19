@@ -7,7 +7,9 @@ import (
 	"log"
 	"net/http"
 	"os"
- 
+
+	"github.com/mohammadMghi/apiGolangGateway/db"
+	"github.com/mohammadMghi/apiGolangGateway/models"
 )
 
 
@@ -24,7 +26,7 @@ type Nodes struct{
 func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 
 
- 
+
  
 	file, err := os.Open("servers.json")
 	if err != nil {
@@ -56,17 +58,25 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 	for _ , value := range nodes {
 	
 		if w.URL.Path == value[0]["sender"] {
-			
-			fmt.Print(value)
- 
-			fmt.Print("\n")
-			fmt.Print("\n")
-			fmt.Print("\n")
-			fmt.Print("\n")
+		 
+			var transaction models.Transaction
 			
 			http.HandleFunc(value[0]["sender"], func(w http.ResponseWriter, r *http.Request) {
 	   
 				redirectURL := value[0]["receiver"] 
+
+				 
+				payload , err := ioutil.ReadAll(r.Body)
+				if err != nil {
+					fmt.Println(err)
+					return
+				}
+ 
+
+				transaction.Payload = string(payload) 
+
+				db.Insert(transaction)
+				
 	 
 				http.Redirect(w, r, redirectURL, http.StatusFound)
 			})
