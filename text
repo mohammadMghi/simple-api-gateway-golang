@@ -1,0 +1,64 @@
+
+request -> {
+    payload
+    Header
+}
+
+id    correlation_id  causation_id   status       payload        
+
+1     1               1              IN_PROCESS        {service : "test1"  content :{name:"this a test" , [{"name" : "this a test"}]}}
+
+2     1               1              In        {service : "test1"  content :{name:"this a test" , [{"name" : "this a test"}]}}
+
+3     1               2                      {service : "test2"  content :{name:"this a test" , [{"name" : "this a test"}]}}
+
+5     1               3                      {service : "test3"  content :{name:"this a test" , [{"name" : "this a test"}]}}
+
+6     1               5                      {service : "test3"  content :{name:"this a test" , [{"name" : "this a test"}]}}
+
+
+
+{
+    "geateway" :[
+      {
+        "correlation_id" : "1"
+        "causation_id" : "1",
+        "status" : "IN_PROCESS"
+      }
+    ],
+
+    "serviceA" :[
+        "correlation_id" : "1"
+        "causation_id" : "2",
+        "status" : "IN_PROCESS"
+        "payload" : [
+            {
+                ...
+            }
+        ]
+    ],
+
+    "serviceB" :[
+        "correlation_id" : "1"
+        "causation_id" : "2"
+        "status" : "IN_PROCESS"
+        "payload" : [
+            {
+                ...
+            }
+        ]
+    ],
+
+    "serviceC" :[
+        "correlation_id" : "1"
+        "causation_id" : "2"
+        "status" : "SUCCESS"
+        "payload" : [
+            {
+                ...
+            }
+        ]
+    ]
+
+    
+}

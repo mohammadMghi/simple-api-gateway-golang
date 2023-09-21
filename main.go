@@ -1,6 +1,7 @@
 package main
 
 import (
+ 
 	"encoding/json"
 	"fmt"
 	"io"
@@ -75,36 +76,42 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 			
 				} 
 
-	
-				payload , err := ioutil.ReadAll(r.Body)
-				if err != nil {
-					fmt.Println(err)
-					return
-				}
-
-				fmt.Printf(value[0]["causation_id"])
-		
-				transaction.CausationId = value[0]["causation_id"]
-
-				transaction.Correlation_id = value[0]["correlation_id"]
+	 
  
- 
-				transaction.Is_Command = value[0]["is_command"]
-			    transaction.Is_Query = value[0]["is_query"]
-				transaction.Payload = string(payload) 
+				transaction.Correlation_id = 1
+				transaction.CausationId = 1
+	 
 				transaction.Status = "IN_PROCESS"
-				transaction.UserIp = ReadUserIP(r)
-				db.Insert(transaction)
+		 
+	
 				
 				req, err := http.NewRequest("", redirectURL, nil)
  
+
+				body , err :=ioutil.ReadAll(r.Body)
+		 
+				if err != nil {
+					log.Fatal(err)
+				}
+				jsonString := string(body)
+
+				data := map[string]interface{}{
+					"correlation_id":    transaction.Correlation_id,
+					"causation_id":   transaction.CausationId,
+					"payload": map[string]interface{}{
+						"Message": jsonString,
+					},
+				}
+			
+				transaction.Message =jsonString
+				db.Insert(transaction)
+
 				resp, err  = client.Do(req)
 				if err != nil {
 					fmt.Println(err)
 					return
 				}
-				
-			
+			 
 			
 				w.WriteHeader(resp.StatusCode)
 				for key, values := range resp.Header {
@@ -114,8 +121,11 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 					}
 				}
 				_, err = io.Copy(w, resp.Body)
-	
-	 
+				jsonResp, err := json.Marshal(data)
+				if err != nil {
+					log.Fatalf("Error happened in JSON marshal. Err: %s", err)
+				}
+				w.Write(jsonResp)
 			
 			})
 

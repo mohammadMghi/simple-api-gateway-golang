@@ -2,41 +2,29 @@
 
    "service1" : [
         {
-            "id" : "1",
             "sender" : "/register",
             "receiver" : "http://localhost:8081",
-            "auth_required" : "false",
-            "causation_id" : "1",
-            "correlation_id" : "1",
-            "is_query" : "true",
-            "is_root" : "true",
-            "is_command" : "false"
+            "auth_required" : "false"
         }
   
     ],
     "service2" : [
         {
-            "id" : "2",
+
             "sender" : "/auth",
             "receiver" : "http://localhost:8002/user",
-            "auth_required" : "false",
-            "causation_id" : "1",
-            "correlation_id" : "1",
-            "is_query" : "true",
-            "is_command" : "false"
+            "auth_required" : "false"
+
         }
   
     ],
     "service3" : [
         {
-            "id" : "2",
+   
             "sender" : "/auth",
             "receiver" : "http://localhost:8002/user",
-            "auth_required" : "false",
-            "causation_id" : "1",
-            "correlation_id" : "2",
-            "is_query" : "true",
-            "is_command" : "false"
+            "auth_required" : "false"
+
         }
   
     ]
