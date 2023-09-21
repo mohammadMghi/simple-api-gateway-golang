@@ -16,7 +16,23 @@
             "sender" : "/auth",
             "receiver" : "http://localhost:8002/user",
             "auth_required" : "false",
-            "root_id" : "1"
+            "causation_id" : "1",
+            "correlation_id" : "1",
+            "is_query" : "true",
+            "is_command" : "false"
+        }
+  
+    ],
+    "service3" : [
+        {
+            "id" : "2",
+            "sender" : "/auth",
+            "receiver" : "http://localhost:8002/user",
+            "auth_required" : "false",
+            "causation_id" : "1",
+            "correlation_id" : "2",
+            "is_query" : "true",
+            "is_command" : "false"
         }
   
     ]

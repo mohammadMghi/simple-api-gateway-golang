@@ -3,9 +3,10 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
- 
+
 	"net/http"
 	"os"
 
@@ -25,7 +26,7 @@ type Handlers struct{
 func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 
  
-
+	var resp *http.Response
  
 	file, err := os.Open("servers.json")
 	if err != nil {
@@ -46,7 +47,7 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
  
 	json.Unmarshal(jsonBytes, &nodes)
 	
-
+	client := &http.Client{}
  
 
 	for _ , value := range nodes {
@@ -66,7 +67,7 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 				if value[0]["auth_required"]== "true" {
 
 					authorizationHeader := r.Header.Get("Authorization")
-
+				 
 					if authorizationHeader == "" {
 						http.Error(w, "Unauthorized", http.StatusUnauthorized)
 						return
@@ -82,28 +83,47 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 				}
 		
 				if value[0]["is_root"] == "true"{
-					transaction.Is_root = true
+					transaction.IsRoot = true
+	
 				}else{
 
-					transaction.RootId = value[0]["root_id"]
+					transaction.CausationId = value[0]["causation_id"]
 
-					transaction.Is_root = false
+					transaction.Correlation_id = value[0]["correlation_id"]
+			 
 				}
 
  
-
+				transaction.Is_Command = value[0]["is_command"]
+			    transaction.Is_Query = value[0]["is_query"]
 				transaction.Payload = string(payload) 
 
 				db.Insert(transaction)
 				
-	 
-				http.Redirect(w, r, redirectURL, http.StatusFound)
-
+				req, err := http.NewRequest("", redirectURL, nil)
+ 
+				resp, err  = client.Do(req)
+				if err != nil {
+					fmt.Println(err)
+					return
+				}
+			
+				w.WriteHeader(resp.StatusCode)
+				for key, values := range resp.Header {
+					for _, value := range values {
+						w.Header().Add(key, value)
 				 
+					}
+				}
+				_, err = io.Copy(w, resp.Body)
+	
+	 
+			
 			})
 
+			
 			hlr.ServeHTTP(r,w)
-			break
+			break	
 	 
 		}else{
 			fmt.Errorf("Not found")
