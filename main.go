@@ -81,23 +81,19 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 					fmt.Println(err)
 					return
 				}
+
+				fmt.Printf(value[0]["causation_id"])
 		
-				if value[0]["is_root"] == "true"{
-					transaction.IsRoot = true
-	
-				}else{
+				transaction.CausationId = value[0]["causation_id"]
 
-					transaction.CausationId = value[0]["causation_id"]
-
-					transaction.Correlation_id = value[0]["correlation_id"]
-			 
-				}
-
+				transaction.Correlation_id = value[0]["correlation_id"]
+ 
  
 				transaction.Is_Command = value[0]["is_command"]
 			    transaction.Is_Query = value[0]["is_query"]
 				transaction.Payload = string(payload) 
-
+				transaction.Status = "IN_PROCESS"
+				transaction.UserIp = ReadUserIP(r)
 				db.Insert(transaction)
 				
 				req, err := http.NewRequest("", redirectURL, nil)
@@ -107,6 +103,8 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 					fmt.Println(err)
 					return
 				}
+				
+			
 			
 				w.WriteHeader(resp.StatusCode)
 				for key, values := range resp.Header {
@@ -137,7 +135,16 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
  
 }
  
- 
+func ReadUserIP(r *http.Request) string {
+    IPAddress := r.Header.Get("X-Real-Ip")
+    if IPAddress == "" {
+        IPAddress = r.Header.Get("X-Forwarded-For")
+    }
+    if IPAddress == "" {
+        IPAddress = r.RemoteAddr
+    }
+    return IPAddress
+}
 func main(){
 	var handlers Handlers
   

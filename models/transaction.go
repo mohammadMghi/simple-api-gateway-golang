@@ -7,7 +7,6 @@ type Transaction struct{
 	CausationId string `json:"causation_id"`
 	UserIp string `json:"user_ip"`
 	UserId string `json:"user_id"`
-	RootId string `json:"root_id"`
 	ReqType string `json:"request_type"`
 	Is_Query string `json:"is_query"`
 	Is_Command string `json:"is_Command"`

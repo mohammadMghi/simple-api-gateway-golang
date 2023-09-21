@@ -3,10 +3,14 @@
    "service1" : [
         {
             "id" : "1",
-            "sender" : "/reguster",
+            "sender" : "/register",
             "receiver" : "http://localhost:8081",
             "auth_required" : "false",
-            "is_root" :"true"
+            "causation_id" : "1",
+            "correlation_id" : "1",
+            "is_query" : "true",
+            "is_root" : "true",
+            "is_command" : "false"
         }
   
     ],
