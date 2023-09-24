@@ -1,12 +1,12 @@
 package main
 
 import (
- 
 	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
+	"strconv"
 
 	"net/http"
 	"os"
@@ -111,6 +111,9 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 					fmt.Println(err)
 					return
 				}
+
+
+				var response map[string][]map[string]string
 			 
 			
 				w.WriteHeader(resp.StatusCode)
@@ -120,6 +123,46 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 				 
 					}
 				}
+
+				bodyResponse , err :=ioutil.ReadAll(resp.Body)
+		 
+				if err != nil {
+					log.Fatal(err)
+				}
+
+				err =json.Unmarshal(bodyResponse, response)
+				if err != nil {
+					fmt.Println(err)
+					return
+				}
+
+
+				for _ , value := range response{
+			 
+
+					correlation_id, err := strconv.ParseInt(value[0]["correlation_id"], 10, 64)
+
+					if err != nil {
+						fmt.Println("Error:", err)
+						return
+					}
+					causation_id, err := strconv.ParseInt(value[0]["causation_id"], 10, 64)
+
+					if err != nil {
+						fmt.Println("Error:", err)
+						return
+					}
+			 
+					transaction.Message =  value[0]["payload"]
+
+
+
+					var tr models.Transaction
+					tr.Correlation_id =correlation_id
+					tr.CausationId = causation_id
+					db.Insert(transaction)
+				} 
+
 				_, err = io.Copy(w, resp.Body)
 				jsonResp, err := json.Marshal(data)
 				if err != nil {
@@ -131,6 +174,8 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 
 			
 			hlr.ServeHTTP(r,w)
+
+			
 			break	
 	 
 		}else{
