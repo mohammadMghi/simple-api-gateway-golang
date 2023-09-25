@@ -6,13 +6,13 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
-	"strconv"
 
 	"net/http"
 	"os"
 
 	"github.com/mohammadMghi/apiGolangGateway/db"
 	"github.com/mohammadMghi/apiGolangGateway/models"
+ 
 )
 
 
@@ -23,11 +23,19 @@ type Handlers struct{
 
  
 
+type ResponseNode struct{
+	Correlation_id int64 `json"correlation_id"`
+	Causation_id int64 `json"causation_id"`
+	Status string `json"status"`
+	Payload interface{} `json:"payload"`
+}
+
 
 func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 
  
 	var resp *http.Response
+ 
  
 	file, err := os.Open("servers.json")
 	if err != nil {
@@ -44,6 +52,7 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 		log.Fatal(err)
 	}
 	defer file.Close()
+
 
  
 	json.Unmarshal(jsonBytes, &nodes)
@@ -78,15 +87,12 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 
 	 
  
-				transaction.Correlation_id = 1
-				transaction.CausationId = 1
 	 
 				transaction.Status = "IN_PROCESS"
 		 
 	
 				
-				req, err := http.NewRequest("", redirectURL, nil)
- 
+			
 
 				body , err :=ioutil.ReadAll(r.Body)
 		 
@@ -94,17 +100,34 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 					log.Fatal(err)
 				}
 				jsonString := string(body)
+				transaction.Message =jsonString
 
+				db.Insert(&transaction)
+				transaction.Correlation_id =  *transaction.ID 
+				transaction.CausationId =    *transaction.ID 
+
+				
+				db.Update(&transaction)
 				data := map[string]interface{}{
-					"correlation_id":    transaction.Correlation_id,
-					"causation_id":   transaction.CausationId,
+					"correlation_id":    transaction.ID,
+					"causation_id":   transaction.ID,
 					"payload": map[string]interface{}{
 						"Message": jsonString,
 					},
 				}
 			
-				transaction.Message =jsonString
-				db.Insert(transaction)
+			
+
+
+				req, err := http.NewRequest("", redirectURL, nil)
+ 
+				if err != nil {
+					log.Fatal(err)
+				}
+
+
+
+
 
 				resp, err  = client.Do(req)
 				if err != nil {
@@ -113,10 +136,10 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 				}
 
 
-				var response map[string][]map[string]string
+	
 			 
 			
-				w.WriteHeader(resp.StatusCode)
+
 				for key, values := range resp.Header {
 					for _, value := range values {
 						w.Header().Add(key, value)
@@ -130,39 +153,51 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 					log.Fatal(err)
 				}
 
-				err =json.Unmarshal(bodyResponse, response)
+				var datsada = make(map[string][]ResponseNode)
+				
+
+
+				fmt.Printf(string(bodyResponse))
+				err =json.Unmarshal(bodyResponse, &datsada)
+
+
+				fmt.Print( (datsada))
 				if err != nil {
 					fmt.Println(err)
 					return
 				}
 
 
-				for _ , value := range response{
+				responseLen := len(datsada) -1
+				for _ , value :=range datsada{
+
 			 
 
-					correlation_id, err := strconv.ParseInt(value[0]["correlation_id"], 10, 64)
+	 
 
-					if err != nil {
-						fmt.Println("Error:", err)
-						return
-					}
-					causation_id, err := strconv.ParseInt(value[0]["causation_id"], 10, 64)
+				 
 
-					if err != nil {
-						fmt.Println("Error:", err)
-						return
-					}
-			 
-					transaction.Message =  value[0]["payload"]
+				 
+					b, _ := json.Marshal(value[responseLen].Payload)
 
-
-
+				
 					var tr models.Transaction
-					tr.Correlation_id =correlation_id
-					tr.CausationId = causation_id
-					db.Insert(transaction)
-				} 
+					db.Insert(&tr)
 
+
+					tr.Correlation_id = int64(value[responseLen].Correlation_id)
+					tr.CausationId = int64(value[responseLen].Causation_id)
+					tr.Message =  string(b) 
+					db.Update(&tr)
+					responseLen++
+				} 
+		 
+		 
+			 
+					 
+			 
+
+				w.WriteHeader(resp.StatusCode)
 				_, err = io.Copy(w, resp.Body)
 				jsonResp, err := json.Marshal(data)
 				if err != nil {
@@ -188,6 +223,10 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
  
  
  
+}
+
+func normalizationDatabase(){
+
 }
  
 func ReadUserIP(r *http.Request) string {

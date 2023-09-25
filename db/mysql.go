@@ -35,9 +35,26 @@ func ConnectToDB() (*gorm.DB, error) {
 
 
 }
+func Update(model *models.Transaction){
+	db , err:= ConnectToDB()
+
  
 
-func Insert(model models.Transaction){
+	if err !=nil{
+		panic(err)
+	}
+
+ 
+
+	err  = db.Save(&model).Error
+	
+	if err != nil {
+		fmt.Errorf(err.Error())
+		panic(err.Error())
+	}
+}
+
+func Insert(model *models.Transaction){
 	db , err:= ConnectToDB()
 
  
