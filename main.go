@@ -1,18 +1,20 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
+ 
+	"time"
 
 	"net/http"
 	"os"
 
 	"github.com/mohammadMghi/apiGolangGateway/db"
 	"github.com/mohammadMghi/apiGolangGateway/models"
- 
 )
 
 
@@ -30,6 +32,14 @@ type ResponseNode struct{
 	Payload interface{} `json:"payload"`
 }
 
+type Service struct{
+	 Sender string `json:"sender"`
+	 Receiver string `json:"receiver"`
+	 AuthRequired string `json:"auth_required"`
+}
+
+ 
+
 
 func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 
@@ -41,7 +51,7 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 	if err != nil {
 		log.Fatal(err)
 	}
-	var nodes map[string][]map[string]string
+
 	 
  
 	jsonBytes, err := ioutil.ReadAll(file)
@@ -53,28 +63,63 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 	}
 	defer file.Close()
 
+	var servicesJson map[string][]map[string]string
 
- 
-	json.Unmarshal(jsonBytes, &nodes)
+
+
+	json.Unmarshal(jsonBytes, &servicesJson)
 	
-	client := &http.Client{}
+
+	responseLen := len(servicesJson) -1
+
+	var services []Service
+	var service Service
+	for _, value := range(servicesJson){
+		service.AuthRequired = value[responseLen]["auth_required"]
+		service.Receiver = value[responseLen]["receiver"]
+		service.AuthRequired = value[responseLen]["auth_required"]
+		
+		services = append(services,service )
+		responseLen++
+
+	}
+	 
+
+	
+	ticker := time.NewTicker(5 * time.Second)
+	quit := make(chan struct{})
+	go func() {
+		for {
+		select {
+			case <- ticker.C:
+				 
+				
+
+
+			case <- quit:
+				ticker.Stop()
+				return
+			}
+		}
+	}()
  
 
-	for _ , value := range nodes {
+	for _ , value := range services {
 	
-		if w.URL.Path == value[0]["sender"] {
+		if w.URL.Path == value.Sender {
 	
+
 			var transaction models.Transaction
 
 			hlr :=http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		 
-				fmt.Println(value[0]["sender"])
+				fmt.Println(value.Sender)
 
-				redirectURL := value[0]["receiver"] 
+				redirectURL := value.Receiver
 
 			
 
-				if value[0]["auth_required"]== "true" {
+				if value.AuthRequired== "true" {
 
 					authorizationHeader := r.Header.Get("Authorization")
 				 
@@ -116,17 +161,20 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 					},
 				}
 			
-			
+				m , e:= json.Marshal(data)
 
-
-				req, err := http.NewRequest("", redirectURL, nil)
+				if e != nil {
+					log.Fatal(e)
+				}
+	 
+				req, err := http.NewRequest("", redirectURL, bytes.NewBuffer(m))
  
 				if err != nil {
 					log.Fatal(err)
 				}
 
 
-
+				client := &http.Client{}
 
 
 				resp, err  = client.Do(req)
@@ -136,10 +184,6 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 				}
 
 
-	
-			 
-			
-
 				for key, values := range resp.Header {
 					for _, value := range values {
 						w.Header().Add(key, value)
@@ -147,37 +191,31 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 					}
 				}
 
-				bodyResponse , err :=ioutil.ReadAll(resp.Body)
+				
 		 
 				if err != nil {
 					log.Fatal(err)
 				}
 
-				var datsada = make(map[string][]ResponseNode)
+				var respNode = make(map[string][]ResponseNode)
 				
-
+				bodyResponse , err :=ioutil.ReadAll(resp.Body)
 
 				fmt.Printf(string(bodyResponse))
-				err =json.Unmarshal(bodyResponse, &datsada)
+				err =json.Unmarshal(bodyResponse, &respNode)
 
 
-				fmt.Print( (datsada))
+				fmt.Print( (respNode))
 				if err != nil {
 					fmt.Println(err)
 					return
 				}
 
 
-				responseLen := len(datsada) -1
-				for _ , value :=range datsada{
-
+				responseLen := len(respNode) -1
+				for _ , value :=range respNode{
 			 
-
-	 
-
-				 
-
-				 
+  
 					b, _ := json.Marshal(value[responseLen].Payload)
 
 				
@@ -214,7 +252,7 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 			break	
 	 
 		}else{
-			fmt.Errorf("Not found")
+			 fmt.Println("Error : url not found")
 		}
 
 		

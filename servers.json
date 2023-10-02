@@ -2,11 +2,22 @@
 
    "service1" : [
         {
-            "sender" : "/register",
-            "receiver" : "http://localhost:8081",
-            "auth_required" : "false"
+            "podA" :[
+                {
+                    "sender" : "/register",
+                    "receiver" : "http://localhost:8081",
+                    "auth_required" : "false"
+                } 
+            ],
+            "podB" :[
+                {
+                    "sender" : "/register",
+                    "receiver" : "http://localhost:8083",
+                    "auth_required" : "false"
+                } 
+            ]
         }
-  
+
     ],
     "service2" : [
         {
