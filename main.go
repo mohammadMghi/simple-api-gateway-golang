@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"time"
+
 	"io/ioutil"
 	"log"
- 
-	"time"
 
 	"net/http"
 	"os"
@@ -32,11 +32,7 @@ type ResponseNode struct{
 	Payload interface{} `json:"payload"`
 }
 
-type Service struct{
-	 Sender string `json:"sender"`
-	 Receiver string `json:"receiver"`
-	 AuthRequired string `json:"auth_required"`
-}
+ 
 
  
 
@@ -63,27 +59,11 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 	}
 	defer file.Close()
 
-	var servicesJson map[string][]map[string]string
+ 
 
-
-
-	json.Unmarshal(jsonBytes, &servicesJson)
-	
-
-	responseLen := len(servicesJson) -1
-
-	var services []Service
-	var service Service
-	for _, value := range(servicesJson){
-		service.AuthRequired = value[responseLen]["auth_required"]
-		service.Receiver = value[responseLen]["receiver"]
-		service.AuthRequired = value[responseLen]["auth_required"]
-		
-		services = append(services,service )
-		responseLen++
-
-	}
-	 
+ 
+ 
+ 
 
 	
 	ticker := time.NewTicker(5 * time.Second)
@@ -102,163 +82,199 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 			}
 		}
 	}()
+
+
+	services  := make(map[string][]map[string][]map[string]string) 
+ 
+	err  = json.Unmarshal(jsonBytes, &services)
+	if err != nil {
+		fmt.Println("Error unmarshaling JSON:", err)
+		return
+	}
  
 
-	for _ , value := range services {
-	
-		if w.URL.Path == value.Sender {
-	
-
-			var transaction models.Transaction
-
-			hlr :=http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		 
-				fmt.Println(value.Sender)
-
-				redirectURL := value.Receiver
-
-			
-
-				if value.AuthRequired== "true" {
-
-					authorizationHeader := r.Header.Get("Authorization")
-				 
-					if authorizationHeader == "" {
-						http.Error(w, "Unauthorized", http.StatusUnauthorized)
-						return
-					}
-			
-				} 
-
-	 
+	for serviceName, serviceList := range services  {
+		fmt.Println("Service Name:", serviceName)
+		for index, services := range serviceList {
+			// Loop through the slice of maps
  
-	 
-				transaction.Status = "IN_PROCESS"
-		 
-	
-				
-			
-
-				body , err :=ioutil.ReadAll(r.Body)
-		 
-				if err != nil {
-					log.Fatal(err)
-				}
-				jsonString := string(body)
-				transaction.Message =jsonString
-
-				db.Insert(&transaction)
-				transaction.Correlation_id =  *transaction.ID 
-				transaction.CausationId =    *transaction.ID 
-
-				
-				db.Update(&transaction)
-				data := map[string]interface{}{
-					"correlation_id":    transaction.ID,
-					"causation_id":   transaction.ID,
-					"payload": map[string]interface{}{
-						"Message": jsonString,
-					},
-				}
-			
-				m , e:= json.Marshal(data)
-
-				if e != nil {
-					log.Fatal(e)
-				}
-	 
-				req, err := http.NewRequest("", redirectURL, bytes.NewBuffer(m))
  
-				if err != nil {
-					log.Fatal(err)
-				}
+
+	 
+
+			for _, pods := range services {
+
+					println( index)
+					
+					var pod = pods[index]
+
+					sender := pod["sender"]
+
+					receiver := pod["receiver"]
+
+					authRequired := pod["authRequired"]
 
 
-				client := &http.Client{}
-
-
-				resp, err  = client.Do(req)
-				if err != nil {
-					fmt.Println(err)
-					return
-				}
-
-
-				for key, values := range resp.Header {
-					for _, value := range values {
-						w.Header().Add(key, value)
-				 
-					}
-				}
-
+					if w.URL.Path == sender {
 				
-		 
-				if err != nil {
-					log.Fatal(err)
-				}
-
-				var respNode = make(map[string][]ResponseNode)
-				
-				bodyResponse , err :=ioutil.ReadAll(resp.Body)
-
-				fmt.Printf(string(bodyResponse))
-				err =json.Unmarshal(bodyResponse, &respNode)
-
-
-				fmt.Print( (respNode))
-				if err != nil {
-					fmt.Println(err)
-					return
-				}
-
-
-				responseLen := len(respNode) -1
-				for _ , value :=range respNode{
-			 
-  
-					b, _ := json.Marshal(value[responseLen].Payload)
-
-				
-					var tr models.Transaction
-					db.Insert(&tr)
-
-
-					tr.Correlation_id = int64(value[responseLen].Correlation_id)
-					tr.CausationId = int64(value[responseLen].Causation_id)
-					tr.Message =  string(b) 
-					db.Update(&tr)
-					responseLen++
-				} 
-		 
-		 
-			 
+			
+						var transaction models.Transaction
+			
+						hlr :=http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					 
+							fmt.Println(sender)
+			
+							redirectURL := receiver
+			
+						
+			
+							if authRequired== "true" {
+			
+								authorizationHeader := r.Header.Get("Authorization")
+							 
+								if authorizationHeader == "" {
+									http.Error(w, "Unauthorized", http.StatusUnauthorized)
+									return
+								}
+						
+							} 
+			
+				 
 			 
-
-				w.WriteHeader(resp.StatusCode)
-				_, err = io.Copy(w, resp.Body)
-				jsonResp, err := json.Marshal(data)
-				if err != nil {
-					log.Fatalf("Error happened in JSON marshal. Err: %s", err)
+				 
+							transaction.Status = "IN_PROCESS"
+					 
+				
+							
+						
+			
+							body , err :=ioutil.ReadAll(r.Body)
+					 
+							if err != nil {
+								log.Fatal(err)
+							}
+							jsonString := string(body)
+							transaction.Message =jsonString
+			
+							db.Insert(&transaction)
+							transaction.Correlation_id =  *transaction.ID 
+							transaction.CausationId =    *transaction.ID 
+			
+							
+							db.Update(&transaction)
+							data := map[string]interface{}{
+								"correlation_id":    transaction.ID,
+								"causation_id":   transaction.ID,
+								"payload": map[string]interface{}{
+									"Message": jsonString,
+								},
+							}
+						
+							m , e:= json.Marshal(data)
+			
+							if e != nil {
+								log.Fatal(e)
+							}
+				 
+							req, err := http.NewRequest("", redirectURL, bytes.NewBuffer(m))
+			 
+							if err != nil {
+								log.Fatal(err)
+							}
+			
+			
+							client := &http.Client{}
+			
+			
+							resp, err  = client.Do(req)
+							if err != nil {
+								fmt.Println(err)
+								return
+							}
+			
+			
+							for key, values := range resp.Header {
+								for _, value := range values {
+									w.Header().Add(key, value)
+							 
+								}
+							}
+			
+							
+					 
+							if err != nil {
+								log.Fatal(err)
+							}
+			
+							var respNode = make(map[string][]ResponseNode)
+							
+							bodyResponse , err :=ioutil.ReadAll(resp.Body)
+			
+							fmt.Printf(string(bodyResponse))
+							err =json.Unmarshal(bodyResponse, &respNode)
+			
+			
+							fmt.Print( (respNode))
+							if err != nil {
+								fmt.Println(err)
+								return
+							}
+			
+			
+							responseLen := len(respNode) -1
+							for _ , value :=range respNode{
+						 
+			  
+								b, _ := json.Marshal(value[responseLen].Payload)
+			
+							
+								var tr models.Transaction
+								db.Insert(&tr)
+			
+			
+								tr.Correlation_id = int64(value[responseLen].Correlation_id)
+								tr.CausationId = int64(value[responseLen].Causation_id)
+								tr.Message =  string(b) 
+								db.Update(&tr)
+								responseLen++
+							} 
+					 
+					 
+						 
+								 
+						 
+			
+							w.WriteHeader(resp.StatusCode)
+							_, err = io.Copy(w, resp.Body)
+							jsonResp, err := json.Marshal(data)
+							if err != nil {
+								log.Fatalf("Error happened in JSON marshal. Err: %s", err)
+							}
+							w.Write(jsonResp)
+						
+						})
+			
+						
+						hlr.ServeHTTP(r,w)
+			
+						
+						break	
+				 
+					}else{
+						 fmt.Println("Error : url not found")
+					}
+			
+					
+				 
+			   
 				}
-				w.Write(jsonResp)
-			
-			})
-
-			
-			hlr.ServeHTTP(r,w)
-
-			
-			break	
-	 
-		}else{
-			 fmt.Println("Error : url not found")
-		}
-
-		
-	 
-   }
  
+			}
+		}
+	
+ 
+
+
  
  
 }

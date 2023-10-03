@@ -15,27 +15,44 @@
                     "receiver" : "http://localhost:8083",
                     "auth_required" : "false"
                 } 
+            ],
+            "podC" :[
+                {
+                    "sender" : "/register",
+                    "receiver" : "http://localhost:8083",
+                    "auth_required" : "false"
+                }
             ]
         }
 
     ],
     "service2" : [
         {
+            "podA":[
+                {
+                    "sender" : "/auth",
+                    "receiver" : "http://localhost:8002/user",
+                    "auth_required" : "false"
+                }
+            ]
 
-            "sender" : "/auth",
-            "receiver" : "http://localhost:8002/user",
-            "auth_required" : "false"
+
 
         }
   
     ],
     "service3" : [
         {
-   
-            "sender" : "/auth",
-            "receiver" : "http://localhost:8002/user",
-            "auth_required" : "false"
-
+            "podA":[
+                {
+  
+                    "sender" : "/auth",
+                    "receiver" : "http://localhost:8002/user",
+                    "auth_required" : "false"
+        
+                }
+            ]
+ 
         }
   
     ]
