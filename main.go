@@ -8,7 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"time"
+ 
 
 	"io/ioutil"
 	"log"
@@ -89,26 +89,7 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
  
  
  
-	
-
  
-
-	ticker := time.NewTicker(5 * time.Second)
-	quit := make(chan struct{})
-	go func() {
-		for {
-		select {
-			case <- ticker.C:
-				 
-				
-
-
-			case <- quit:
-				ticker.Stop()
-				return
-			}
-		}
-	}()
 
 
  
@@ -149,27 +130,27 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 					//if sender existed , converting redis value to int
 		
 		 
+
+				if node.Balancing == "roundrobin"{
 					redisSenderCount, err = strconv.Atoi(val)
 					if err != nil {
 						panic(err)
 					}
-					log.Println(val)
-
-		 
  
-
-				fmt.Println(redisSenderCount)
-				fmt.Println(tagetLen)
-			 
-				if  tagetLen < redisSenderCount{
-					redisSenderCount = 0
-					println("aaaaaaaaaaaaaaa")
-					err := client.Set(ctx, "sender", 0, 0).Err()
-					if err != nil {
-						panic(err)
-					}
-				}
+					if  tagetLen < redisSenderCount{
+						redisSenderCount = 0
 				 
+						err := client.Set(ctx, "sender", 0, 0).Err()
+						if err != nil {
+							panic(err)
+						}
+					}
+					 
+				}else{
+					redisSenderCount = 0
+				}
+
+				
 		 
 				targets := node.Targets
 
@@ -189,11 +170,13 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 					redirectURL := targets[redisSenderCount  ]["url"]
 			 
 		
-
-					err := client.Set(ctx, "sender", redisSenderCount+1, 0).Err()
-					if err != nil {
-						panic(err)
+					if node.Balancing == "roundrobin"{
+						err := client.Set(ctx, "sender", redisSenderCount+1, 0).Err()
+						if err != nil {
+							panic(err)
+						}
 					}
+		
 		 
 				
 	
@@ -337,23 +320,12 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 				break	
 		 
 			} 
-
-
-
-
-
+ 
 			node.Next ++
 	
 		}
 	} 
-
-
-
-
-					
-				 
-			   
-				}
+}
  
 
 func normalizationDatabase(){
