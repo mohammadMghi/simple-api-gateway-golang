@@ -8,10 +8,11 @@
             "podA" :[
                 {
                     "balancing" : "roundrobin",
-                    "sender" : "/register",
+                    "sender" : "/exampel1",
+           
                     "targets" :[
                         { "url" :"http://localhost:8081"},
-                        { "url2" : "http://localhost:8081"}
+                        { "url" : "http://localhost:8084"}
                         
                     ],
                    
@@ -21,10 +22,10 @@
             "podB" :[
                 {
                     "balancing" : "roundrobin",
-                    "sender" : "/register",
+                    "sender" : "/example2",
                     "targets" :[
                         { "url" :"http://localhost:8081"},
-                        { "url2" : "http://localhost:8081"}
+                        { "url" : "http://localhost:8081"}
                         
                     ],
                     "auth_required" : false
@@ -33,10 +34,10 @@
             "podC" :[
                 {
                     "balancing" : "roundrobin",
-                    "sender" : "/register",
+                    "sender" : "/exampel3",
                     "targets" :[
                         { "url" :"http://localhost:8081"},
-                        { "url2" : "http://localhost:8081"}
+                        { "url" : "http://localhost:8081"}
                         
                     ],
                     "auth_required" : false
@@ -45,10 +46,10 @@
             "podD":[
                 {
                     "balancing" : "roundrobin",
-                    "sender" : "/auth",
+                    "sender" : "/exampel4",
                     "targets" :[
                         { "url" :"http://localhost:8081"},
-                        { "url2" : "http://localhost:8081"}
+                        { "url" : "http://localhost:8081"}
                         
                     ],
                     "auth_required" :false
@@ -58,10 +59,10 @@
             "podE":[
                 {
                     "balancing" : "roundrobin",
-                    "sender" : "/auth",
+                    "sender" : "/exampel5",
                     "targets" :[
                         { "url" :"http://localhost:8081"},
-                        { "url2" : "http://localhost:8081"}
+                        { "url" : "http://localhost:8081"}
                         
                     ],
                     "auth_required" : false

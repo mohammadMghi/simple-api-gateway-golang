@@ -2,7 +2,9 @@ package main
 
 import (
 	"bytes"
- 
+	"context"
+	"strconv"
+
 	"encoding/json"
 	"fmt"
 	"io"
@@ -13,7 +15,8 @@ import (
 
 	"net/http"
 	"os"
- 
+
+	"github.com/go-redis/redis/v8"
 	"github.com/mohammadMghi/apiGolangGateway/db"
 	"github.com/mohammadMghi/apiGolangGateway/models"
 )
@@ -43,12 +46,26 @@ type Node struct{
 	Balancing string `json:"balancing"`
 	Sender string	`json:"sender"`
 	AuthRequired bool `json:"auth_required"`
-	Targets []map[string]interface{} `json:"targets"`
+	Targets []map[string]string`json:"targets"`
+	Next int `json:"next"`
+ 
 }
 
-
+var config Config 
 func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 
+	
+	client := redis.NewClient(&redis.Options{
+        Addr:	  "localhost:6379",
+        Password: "", // no password set
+        DB:		  0,  // use default DB
+    })
+
+    ctx := context.Background()
+
+
+ 
+ 
  
 	var resp *http.Response
  
@@ -71,7 +88,7 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 
  
  
-	var config Config
+ 
 	
 
  
@@ -94,237 +111,250 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 	}()
 
 
-
-
-
-	services  := make(map[string][]map[string][]map[string]string) 
+ 
  
 	err  = json.Unmarshal(jsonBytes, &config)
-
- 
-	fmt.Println(config)
 
 	if err != nil {
 		fmt.Println("Error unmarshaling JSON:", err)
 		return
 	}
-
-	var previousRequestPath = ""
-
-	for serviceName, serviceList := range services  {
-		fmt.Println("Service Name:", serviceName)
-		for index, services := range serviceList {
-			// Loop through the slice of maps
  
+	fmt.Println(config)
  
+	var redisSenderCount = 0
+	for _ , nodes := range config.Cfg[0]{
 
-	 
+		for _ , node := range nodes{
+	
+		
 
-			for _, pods := range services {
-
-					println( index)
-					
-					var pod = pods[index]
-
-					sender := pod["sender"]
-
-					sender = previousRequestPath
-
-					receiver := pod["receiver"]
-
-					authRequired := pod["authRequired"]
+			sender := node.Sender
+ 
 		 
-
-
-
-
-					//new request is like pre request
-
-					//check in redis and latest request if same then count 1 and send request to the next
- 
-
 	 
 
+			if w.URL.Path == sender {
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-					if w.URL.Path == sender {
-				
+				tagetLen := len(node.Targets) -1
+				val, err := client.Get(ctx, "sender").Result()
 			
-						var transaction models.Transaction
-			
-						hlr :=http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					 
-							fmt.Println(sender)
-			
-							redirectURL := receiver
-			
-						
-			
-							if authRequired== "true" {
-			
-								authorizationHeader := r.Header.Get("Authorization")
-							 
-								if authorizationHeader == "" {
-									http.Error(w, "Unauthorized", http.StatusUnauthorized)
-									return
-								}
-						
-							} 
-			
-				 
-			 
-				 
-							transaction.Status = "IN_PROCESS"
-					 
-				
-							
-						
-			
-							body , err :=ioutil.ReadAll(r.Body)
-					 
-							if err != nil {
-								log.Fatal(err)
-							}
-							jsonString := string(body)
-							transaction.Message =jsonString
-			
-							db.Insert(&transaction)
-							transaction.Correlation_id =  *transaction.ID 
-							transaction.CausationId =    *transaction.ID 
-			
-							
-							db.Update(&transaction)
-							data := map[string]interface{}{
-								"correlation_id":    transaction.ID,
-								"causation_id":   transaction.ID,
-								"payload": map[string]interface{}{
-									"Message": jsonString,
-								},
-							}
-						
-							m , e:= json.Marshal(data)
-			
-							if e != nil {
-								log.Fatal(e)
-							}
-				 
-							req, err := http.NewRequest("", redirectURL, bytes.NewBuffer(m))
-			 
-							if err != nil {
-								log.Fatal(err)
-							}
-			
-			
-							client := &http.Client{}
-			
-			
-							resp, err  = client.Do(req)
-							if err != nil {
-								fmt.Println(err)
-								return
-							}
-			
-			
-							for key, values := range resp.Header {
-								for _, value := range values {
-									w.Header().Add(key, value)
-							 
-								}
-							}
-			
-							
-					 
-							if err != nil {
-								log.Fatal(err)
-							}
-			
-							var respNode = make(map[string][]ResponseNode)
-							
-							bodyResponse , err :=ioutil.ReadAll(resp.Body)
-			
-							fmt.Printf(string(bodyResponse))
-							err =json.Unmarshal(bodyResponse, &respNode)
-			
-			
-							fmt.Print( (respNode))
-							if err != nil {
-								fmt.Println(err)
-								return
-							}
-			
-			
-							responseLen := len(respNode) -1
-							for _ , value :=range respNode{
-						 
-			  
-								b, _ := json.Marshal(value[responseLen].Payload)
-			
-							
-								var tr models.Transaction
-								db.Insert(&tr)
-			
-			
-								tr.Correlation_id = int64(value[responseLen].Correlation_id)
-								tr.CausationId = int64(value[responseLen].Causation_id)
-								tr.Message =  string(b) 
-								db.Update(&tr)
-								responseLen++
-							} 
-					 
-					 
-						 
-								 
-						 
-			
-							w.WriteHeader(resp.StatusCode)
-							_, err = io.Copy(w, resp.Body)
-							jsonResp, err := json.Marshal(data)
-							if err != nil {
-								log.Fatalf("Error happened in JSON marshal. Err: %s", err)
-							}
-							w.Write(jsonResp)
-						
-						})
-			
-						
-						hlr.ServeHTTP(r,w)
-			
-						
-						break	
-				 
-					}else{
-						 fmt.Println("Error : url not found")
+				if err == redis.Nil  {
+					// if sender dosnt existed in redis this code will be execute
+					err := client.Set(ctx, "sender", 0, 0).Err()
+					if err != nil {
+						panic(err)
 					}
+				} 
+					//if sender existed , converting redis value to int
+		
+		 
+					redisSenderCount, err = strconv.Atoi(val)
+					if err != nil {
+						panic(err)
+					}
+					log.Println(val)
+
+		 
+ 
+
+				fmt.Println(redisSenderCount)
+				fmt.Println(tagetLen)
+			 
+				if  tagetLen < redisSenderCount{
+					redisSenderCount = 0
+					println("aaaaaaaaaaaaaaa")
+					err := client.Set(ctx, "sender", 0, 0).Err()
+					if err != nil {
+						panic(err)
+					}
+				}
+				 
+		 
+				targets := node.Targets
+
+				authRequired := node.AuthRequired
+	
+	
+				var transaction models.Transaction
+	
+				hlr :=http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+			 
+			 
 			
+				 
+
+			 
+					redirectURL := targets[redisSenderCount  ]["url"]
+			 
+		
+
+					err := client.Set(ctx, "sender", redisSenderCount+1, 0).Err()
+					if err != nil {
+						panic(err)
+					}
+		 
+				
+	
+					if authRequired== authRequired {
+	
+						authorizationHeader := r.Header.Get("Authorization")
+					 
+						if authorizationHeader == "" {
+							http.Error(w, "Unauthorized", http.StatusUnauthorized)
+							return
+						}
+				
+					} 
+	
+		 
+	 
+		 
+					transaction.Status = "IN_PROCESS"
+			 
+		
+					
+				
+	
+					body , err :=ioutil.ReadAll(r.Body)
+			 
+					if err != nil {
+						log.Fatal(err)
+					}
+					jsonString := string(body)
+					transaction.Message =jsonString
+	
+					db.Insert(&transaction)
+					transaction.Correlation_id =  *transaction.ID 
+					transaction.CausationId =    *transaction.ID 
+	
+					
+					db.Update(&transaction)
+					data := map[string]interface{}{
+						"correlation_id":    transaction.ID,
+						"causation_id":   transaction.ID,
+						"payload": map[string]interface{}{
+							"Message": jsonString,
+						},
+					}
+				
+					m , e:= json.Marshal(data)
+	
+					if e != nil {
+						log.Fatal(e)
+					}
+
+
+
+
+
+
+					
+		 
+					req, err := http.NewRequest("", redirectURL, bytes.NewBuffer(m))
+	 
+					if err != nil {
+						log.Fatal(err)
+					}
+	
+	
+					client := &http.Client{}
+	
+	
+					resp, err  = client.Do(req)
+					if err != nil {
+						fmt.Println(err)
+						return
+					}
+	
+	
+					for key, values := range resp.Header {
+						for _, value := range values {
+							w.Header().Add(key, value)
+					 
+						}
+					}
+	
+					
+			 
+					if err != nil {
+						log.Fatal(err)
+					}
+	
+					var respNode = make(map[string][]ResponseNode)
+					
+					bodyResponse , err :=ioutil.ReadAll(resp.Body)
+	
+					fmt.Printf(string(bodyResponse))
+					err =json.Unmarshal(bodyResponse, &respNode)
+	
+	
+					fmt.Print( (respNode))
+					if err != nil {
+						fmt.Println(err)
+						return
+					}
+	
+	
+					responseLen := len(respNode) -1
+					for _ , value :=range respNode{
+				 
+	  
+						b, _ := json.Marshal(value[responseLen].Payload)
+	
+					
+						var tr models.Transaction
+						db.Insert(&tr)
+	
+	
+						tr.Correlation_id = int64(value[responseLen].Correlation_id)
+						tr.CausationId = int64(value[responseLen].Causation_id)
+						tr.Message =  string(b) 
+						db.Update(&tr)
+						responseLen++
+					} 
+			 
+			 
+				 
+						 
+				 
+	
+					w.WriteHeader(resp.StatusCode)
+					_, err = io.Copy(w, resp.Body)
+					jsonResp, err := json.Marshal(data)
+					if err != nil {
+						log.Fatalf("Error happened in JSON marshal. Err: %s", err)
+					}
+					w.Write(jsonResp)
+				
+				})
+	
+				
+				hlr.ServeHTTP(r,w)
+	
+				
+				break	
+		 
+			} 
+
+
+
+
+
+			node.Next ++
+	
+		}
+	} 
+
+
+
+
 					
 				 
 			   
 				}
  
-			}
-		}
-	
- 
-
-
- 
- 
-}
 
 func normalizationDatabase(){
 
