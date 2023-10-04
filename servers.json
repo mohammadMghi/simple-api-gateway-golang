@@ -1,61 +1,76 @@
 {
 
-   "service1" : [
+   "config" : [
         {
+
+
+            
             "podA" :[
                 {
+                    "balancing" : "roundrobin",
                     "sender" : "/register",
-                    "receiver" : "http://localhost:8081",
-                    "auth_required" : "false"
+                    "targets" :[
+                        { "url" :"http://localhost:8081"},
+                        { "url2" : "http://localhost:8081"}
+                        
+                    ],
+                   
+                    "auth_required" : false
                 } 
             ],
             "podB" :[
                 {
+                    "balancing" : "roundrobin",
                     "sender" : "/register",
-                    "receiver" : "http://localhost:8083",
-                    "auth_required" : "false"
+                    "targets" :[
+                        { "url" :"http://localhost:8081"},
+                        { "url2" : "http://localhost:8081"}
+                        
+                    ],
+                    "auth_required" : false
                 } 
             ],
             "podC" :[
                 {
+                    "balancing" : "roundrobin",
                     "sender" : "/register",
-                    "receiver" : "http://localhost:8083",
-                    "auth_required" : "false"
+                    "targets" :[
+                        { "url" :"http://localhost:8081"},
+                        { "url2" : "http://localhost:8081"}
+                        
+                    ],
+                    "auth_required" : false
                 }
-            ]
-        }
-
-    ],
-    "service2" : [
-        {
-            "podA":[
+            ],
+            "podD":[
                 {
+                    "balancing" : "roundrobin",
                     "sender" : "/auth",
-                    "receiver" : "http://localhost:8002/user",
-                    "auth_required" : "false"
-                }
-            ]
-
-
-
-        }
-  
-    ],
-    "service3" : [
-        {
-            "podA":[
-                {
-  
-                    "sender" : "/auth",
-                    "receiver" : "http://localhost:8002/user",
-                    "auth_required" : "false"
+                    "targets" :[
+                        { "url" :"http://localhost:8081"},
+                        { "url2" : "http://localhost:8081"}
+                        
+                    ],
+                    "auth_required" :false
         
                 }
+            ],
+            "podE":[
+                {
+                    "balancing" : "roundrobin",
+                    "sender" : "/auth",
+                    "targets" :[
+                        { "url" :"http://localhost:8081"},
+                        { "url2" : "http://localhost:8081"}
+                        
+                    ],
+                    "auth_required" : false
+                }
             ]
- 
         }
-  
-    ]
+
+    ] 
+    
     
 
 }

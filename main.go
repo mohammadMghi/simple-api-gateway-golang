@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+ 
 	"encoding/json"
 	"fmt"
 	"io"
@@ -12,7 +13,7 @@ import (
 
 	"net/http"
 	"os"
-
+ 
 	"github.com/mohammadMghi/apiGolangGateway/db"
 	"github.com/mohammadMghi/apiGolangGateway/models"
 )
@@ -30,11 +31,20 @@ type ResponseNode struct{
 	Causation_id int64 `json"causation_id"`
 	Status string `json"status"`
 	Payload interface{} `json:"payload"`
+ 
 }
 
  
-
+type Config struct{
+	Cfg []map[string][]Node `json:"config"`
+} 
  
+type Node struct{
+	Balancing string `json:"balancing"`
+	Sender string	`json:"sender"`
+	AuthRequired bool `json:"auth_required"`
+	Targets []map[string]interface{} `json:"targets"`
+}
 
 
 func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
@@ -60,12 +70,12 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 	defer file.Close()
 
  
-
  
- 
- 
-
+	var config Config
 	
+
+ 
+
 	ticker := time.NewTicker(5 * time.Second)
 	quit := make(chan struct{})
 	go func() {
@@ -84,14 +94,22 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 	}()
 
 
+
+
+
 	services  := make(map[string][]map[string][]map[string]string) 
  
-	err  = json.Unmarshal(jsonBytes, &services)
+	err  = json.Unmarshal(jsonBytes, &config)
+
+ 
+	fmt.Println(config)
+
 	if err != nil {
 		fmt.Println("Error unmarshaling JSON:", err)
 		return
 	}
- 
+
+	var previousRequestPath = ""
 
 	for serviceName, serviceList := range services  {
 		fmt.Println("Service Name:", serviceName)
@@ -110,9 +128,38 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 
 					sender := pod["sender"]
 
+					sender = previousRequestPath
+
 					receiver := pod["receiver"]
 
 					authRequired := pod["authRequired"]
+		 
+
+
+
+
+					//new request is like pre request
+
+					//check in redis and latest request if same then count 1 and send request to the next
+ 
+
+	 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 					if w.URL.Path == sender {
