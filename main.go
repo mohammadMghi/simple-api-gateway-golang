@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
- 
 
 	"io/ioutil"
 	"log"
@@ -16,6 +15,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/fatih/color"
 	"github.com/go-redis/redis/v8"
 	"github.com/mohammadMghi/apiGolangGateway/db"
 	"github.com/mohammadMghi/apiGolangGateway/models"
@@ -54,7 +54,10 @@ type Node struct{
 var config Config 
 func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 
-	
+	greenLog := color.New(color.FgGreen).PrintfFunc()
+	redLog := color.New(color.FgRed).PrintfFunc()
+ 
+ 
 	client := redis.NewClient(&redis.Options{
         Addr:	  "localhost:6379",
         Password: "", // no password set
@@ -72,6 +75,7 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
  
 	file, err := os.Open("servers.json")
 	if err != nil {
+		redLog(err.Error())
 		log.Fatal(err)
 	}
 
@@ -82,31 +86,27 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 
 	
 	if err != nil {
+		redLog(err.Error())
 		log.Fatal(err)
 	}
 	defer file.Close()
 
  
  
- 
- 
-
-
- 
- 
 	err  = json.Unmarshal(jsonBytes, &config)
 
 	if err != nil {
-		fmt.Println("Error unmarshaling JSON:", err)
+		redLog(err.Error())
 		return
 	}
  
-	fmt.Println(config)
  
+	greenLog("config",config)
 	var redisSenderCount = 0
 	for _ , nodes := range config.Cfg[0]{
 
 		for _ , node := range nodes{
+			greenLog("Node sender:" + node.Sender + " \n")
 	
 		
 
@@ -132,8 +132,11 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 		 
 
 				if node.Balancing == "roundrobin"{
+					greenLog("roundrobin")
+
 					redisSenderCount, err = strconv.Atoi(val)
 					if err != nil {
+						redLog(err.Error())
 						panic(err)
 					}
  
@@ -142,6 +145,7 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 				 
 						err := client.Set(ctx, "sender", 0, 0).Err()
 						if err != nil {
+							redLog(err.Error())
 							panic(err)
 						}
 					}
@@ -168,11 +172,12 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 
 			 
 					redirectURL := targets[redisSenderCount  ]["url"]
-			 
+					greenLog("Target :: " + redirectURL)
 		
 					if node.Balancing == "roundrobin"{
 						err := client.Set(ctx, "sender", redisSenderCount+1, 0).Err()
 						if err != nil {
+							redLog(err.Error())
 							panic(err)
 						}
 					}
@@ -191,18 +196,15 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 				
 					} 
 	
-		 
-	 
+ 
 		 
 					transaction.Status = "IN_PROCESS"
 			 
-		
-					
-				
-	
+ 
 					body , err :=ioutil.ReadAll(r.Body)
 			 
 					if err != nil {
+						redLog(err.Error())
 						log.Fatal(err)
 					}
 					jsonString := string(body)
@@ -225,19 +227,16 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 					m , e:= json.Marshal(data)
 	
 					if e != nil {
+						redLog(err.Error())
 						log.Fatal(e)
 					}
 
-
-
-
-
-
-					
+ 	
 		 
 					req, err := http.NewRequest("", redirectURL, bytes.NewBuffer(m))
 	 
 					if err != nil {
+						redLog(err.Error())
 						log.Fatal(err)
 					}
 	
@@ -247,7 +246,8 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 	
 					resp, err  = client.Do(req)
 					if err != nil {
-						fmt.Println(err)
+						redLog(err.Error())
+			 
 						return
 					}
 	
@@ -258,10 +258,11 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 					 
 						}
 					}
-	
 					
+		
 			 
 					if err != nil {
+						redLog(err.Error())
 						log.Fatal(err)
 					}
 	
@@ -289,7 +290,8 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 					
 						var tr models.Transaction
 						db.Insert(&tr)
-	
+					 
+						
 	
 						tr.Correlation_id = int64(value[responseLen].Correlation_id)
 						tr.CausationId = int64(value[responseLen].Causation_id)
@@ -297,11 +299,7 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 						db.Update(&tr)
 						responseLen++
 					} 
-			 
-			 
-				 
-						 
-				 
+ 
 	
 					w.WriteHeader(resp.StatusCode)
 					_, err = io.Copy(w, resp.Body)
@@ -319,6 +317,9 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 				
 				break	
 		 
+			}else{
+
+				redLog("Target Not found")
 			} 
  
 			node.Next ++
@@ -328,9 +329,7 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 }
  
 
-func normalizationDatabase(){
-
-}
+ 
  
 func ReadUserIP(r *http.Request) string {
     IPAddress := r.Header.Get("X-Real-Ip")
@@ -350,6 +349,7 @@ func main(){
 	// Start the HTTP server on port 8080
 	err := http.ListenAndServe(":8080", handlers)
 	if err != nil {
+		
 		panic(err)
 	}
 
