@@ -7,3 +7,8 @@ This is a simple golang Api gateway
 ## Gateway can insert relevant data to database
 
  Connecting gateway to mysql db is essential 
+
+## Load Balancing
+ 
+ This gateway supported round robin algorithm for distributing incoming request among nodes
+ I puted servers.json file in root of project you can easily config base on your requirements
