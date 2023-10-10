@@ -5,7 +5,7 @@
 
 
             
-            "podA" :[
+            "NodeA" :[
                 {
                     "balancing" : "roundrobin",
                     "sender" : "/exampel1",
@@ -19,7 +19,7 @@
                     "auth_required" : false
                 } 
             ],
-            "podB" :[
+            "NodeB" :[
                 {
                     "balancing" : "roundrobin",
                     "sender" : "/example2",
@@ -31,19 +31,19 @@
                     "auth_required" : false
                 } 
             ],
-            "podC" :[
+            "NodeC" :[
                 {
                     "balancing" : "roundrobin",
                     "sender" : "/exampel3",
                     "targets" :[
                         { "url" :"http://localhost:8081"},
-                        { "url" : "http://localhost:8081"}
+                        { "url" : "http://localhost:8082"}
                         
                     ],
                     "auth_required" : false
                 }
             ],
-            "podD":[
+            "NodeD":[
                 {
                     "balancing" : "roundrobin",
                     "sender" : "/exampel4",
@@ -56,7 +56,7 @@
         
                 }
             ],
-            "podE":[
+            "NodeE":[
                 {
                     "balancing" : "roundrobin",
                     "sender" : "/exampel5",

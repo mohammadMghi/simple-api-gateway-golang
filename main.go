@@ -30,8 +30,8 @@ type Handlers struct{
  
 
 type ResponseNode struct{
-	Correlation_id int64 `json"correlation_id"`
-	Causation_id int64 `json"causation_id"`
+	CorrelationId int64 `json"correlation_id"`
+	Causationid int64 `json"causation_id"`
 	Status string `json"status"`
 	Payload interface{} `json:"payload"`
  
@@ -48,15 +48,15 @@ type Node struct{
 	AuthRequired bool `json:"auth_required"`
 	Targets []map[string]string`json:"targets"`
 	Next int `json:"next"`
- 
 }
 
+var greenLog = color.New(color.FgGreen).PrintfFunc()
+var redLog  = color.New(color.FgRed).PrintfFunc()
 var config Config 
 func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 
-	greenLog := color.New(color.FgGreen).PrintfFunc()
-	redLog := color.New(color.FgRed).PrintfFunc()
  
+	
  
 	client := redis.NewClient(&redis.Options{
         Addr:	  "localhost:6379",
@@ -101,18 +101,18 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 	}
  
  
-	greenLog("config",config)
+	greenLog("\n \n",config)
 	var redisSenderCount = 0
 	for _ , nodes := range config.Cfg[0]{
 
 		for _ , node := range nodes{
-			greenLog("Node sender:" + node.Sender + " \n")
+			 
 	
 		
 
 			sender := node.Sender
  
-		 
+ 
 	 
 
 			if w.URL.Path == sender {
@@ -127,7 +127,7 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 						panic(err)
 					}
 				} 
-					//if sender existed , converting redis value to int
+			 
 		
 		 
 
@@ -161,18 +161,13 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 				authRequired := node.AuthRequired
 	
 	
-				var transaction models.Transaction
+			
 	
 				hlr :=http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
-			 
-			 
-			
-				 
-
-			 
+ 
+ 
 					redirectURL := targets[redisSenderCount  ]["url"]
-					greenLog("Target :: " + redirectURL)
+					greenLog("\n \n","Target :: " + redirectURL)
 		
 					if node.Balancing == "roundrobin"{
 						err := client.Set(ctx, "sender", redisSenderCount+1, 0).Err()
@@ -196,26 +191,12 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 				
 					} 
 	
- 
-		 
-					transaction.Status = "IN_PROCESS"
-			 
- 
-					body , err :=ioutil.ReadAll(r.Body)
-			 
-					if err != nil {
-						redLog(err.Error())
-						log.Fatal(err)
-					}
-					jsonString := string(body)
-					transaction.Message =jsonString
-	
-					db.Insert(&transaction)
-					transaction.Correlation_id =  *transaction.ID 
-					transaction.CausationId =    *transaction.ID 
-	
-					
-					db.Update(&transaction)
+					 
+					var transaction models.Transaction
+
+					transaction , jsonString :=  InsertTransaction(r)
+
+
 					data := map[string]interface{}{
 						"correlation_id":    transaction.ID,
 						"causation_id":   transaction.ID,
@@ -281,25 +262,8 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 					}
 	
 	
-					responseLen := len(respNode) -1
-					for _ , value :=range respNode{
-				 
-	  
-						b, _ := json.Marshal(value[responseLen].Payload)
-	
-					
-						var tr models.Transaction
-						db.Insert(&tr)
-					 
-						
-	
-						tr.Correlation_id = int64(value[responseLen].Correlation_id)
-						tr.CausationId = int64(value[responseLen].Causation_id)
-						tr.Message =  string(b) 
-						db.Update(&tr)
-						responseLen++
-					} 
- 
+				
+					InsertCorAndCuse(respNode)
 	
 					w.WriteHeader(resp.StatusCode)
 					_, err = io.Copy(w, resp.Body)
@@ -319,13 +283,63 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 		 
 			}else{
 
-				redLog("Target Not found")
+ 
 			} 
  
 			node.Next ++
 	
 		}
 	} 
+}
+
+func InsertCorAndCuse(respNode map[string][]ResponseNode ){
+	responseLen := len(respNode) -1
+	for _ , value :=range respNode{
+ 
+
+		body, _ := json.Marshal(value[responseLen].Payload)
+
+	
+		var tr models.Transaction
+		db.Insert(&tr)
+	 
+		
+
+		tr.Correlation_id = int64(value[responseLen].CorrelationId)
+		tr.CausationId = int64(value[responseLen].Causationid)
+		tr.Message =  string(body) 
+		db.Update(&tr)
+		responseLen++
+	} 
+}
+
+
+func InsertTransaction(r *http.Request) (models.Transaction , string){
+	var transaction models.Transaction
+		 
+	transaction.Status = "IN_PROCESS"
+
+
+	body , err :=ioutil.ReadAll(r.Body)
+
+	if err != nil {
+		redLog(err.Error())
+		log.Fatal(err)
+	}
+	jsonString := string(body)
+	transaction.Message =jsonString
+
+	db.Insert(&transaction)
+
+
+
+	transaction.Correlation_id =  *transaction.ID 
+	transaction.CausationId =    *transaction.ID 
+
+	
+	db.Update(&transaction)
+
+	return transaction , jsonString
 }
  
 
@@ -343,8 +357,10 @@ func ReadUserIP(r *http.Request) string {
 }
 func main(){
 	var handlers Handlers
-  
- 
+	greenLog := color.New(color.FgGreen).PrintfFunc()
+
+	greenLog("Gateway is running ...")
+	
  
 	// Start the HTTP server on port 8080
 	err := http.ListenAndServe(":8080", handlers)

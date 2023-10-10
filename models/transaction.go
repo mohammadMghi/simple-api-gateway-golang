@@ -8,13 +8,4 @@ type Transaction struct{
 	Status string `json:"status"`
 }
 
-//geteway = user request stored
-
-//server a = proccecing user request -> event stored
-
-//server b -> proccesing user request -> event stored
-
-// gatewaye = save
-
-
-// id cor_i
+ 
