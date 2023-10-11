@@ -180,7 +180,7 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 		 
 				
 	
-					if authRequired== authRequired {
+					if node.AuthRequired == authRequired {
 	
 						authorizationHeader := r.Header.Get("Authorization")
 					 
@@ -190,20 +190,9 @@ func (h  Handlers)ServeHTTP(r http.ResponseWriter, w  *http.Request){
 						}
 				
 					} 
-	
-					 
-					var transaction models.Transaction
-
-					transaction , jsonString :=  InsertTransaction(r)
-
-
-					data := map[string]interface{}{
-						"correlation_id":    transaction.ID,
-						"causation_id":   transaction.ID,
-						"payload": map[string]interface{}{
-							"Message": jsonString,
-						},
-					}
+					
+					data := MakeResponse(r)
+			
 				
 					m , e:= json.Marshal(data)
 	
@@ -313,6 +302,34 @@ func InsertCorAndCuse(respNode map[string][]ResponseNode ){
 	} 
 }
 
+func MakeResponse(r *http.Request) map[string]interface{}{
+		 
+	var transaction models.Transaction
+
+	transaction , jsonString :=  InsertTransaction(r)
+
+
+	return  map[string]interface{}{
+		"correlation_id":    transaction.ID,
+		"causation_id":   transaction.ID,
+		"payload": map[string]interface{}{
+			"Message": jsonString,
+		},
+	}
+}
+func InitSenderRedis(ctx context.Context,client redis.Client ) string{
+	sender, err := client.Get(ctx, "sender").Result()
+			
+	if err == redis.Nil  {
+		// if sender dosnt existed in redis this code will be execute
+		err := client.Set(ctx, "sender", 0, 0).Err()
+		if err != nil {
+			panic(err)
+		}
+	} 
+
+	return sender
+}
 
 func InsertTransaction(r *http.Request) (models.Transaction , string){
 	var transaction models.Transaction
