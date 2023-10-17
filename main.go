@@ -33,6 +33,7 @@ type ResponseNode struct{
 	CorrelationId int64 `json"correlation_id"`
 	Causationid int64 `json"causation_id"`
 	Status string `json"status"`
+	EntitiyType string `json"entitiy_type"`
 	Payload interface{} `json:"payload"`
  
 }
@@ -296,6 +297,8 @@ func InsertCorAndCuse(respNode map[string][]ResponseNode ){
 
 		tr.Correlation_id = int64(value[responseLen].CorrelationId)
 		tr.CausationId = int64(value[responseLen].Causationid)
+		tr.EntitiyType = string(value[responseLen].EntitiyType)
+		
 		tr.Message =  string(body) 
 		db.Update(&tr)
 		responseLen++

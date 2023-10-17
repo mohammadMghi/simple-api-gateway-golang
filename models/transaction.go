@@ -6,6 +6,7 @@ type Transaction struct{
 	CausationId int64 `json:"causation_id"`
 	Message string `json:"message"`
 	Status string `json:"status"`
+	EntitiyType string `json:"entitiy_type"`
 }
 
  
